@@ -1,19 +1,36 @@
+
+import jwt
+from tools.get_aws_secrets import get_secrets
 from flask import request, g
 from flask_json import FlaskJSON, JsonError, json_response, as_json
 from tools.token_tools import create_token
-
+import bcrypt
+from random import randint
 from tools.logging import logger
+from db_con import get_db_instance, get_db
+secrets = get_secrets()
+
+global_db_con = get_db()
 
 def handle_request():
     logger.debug("Login Handle Request")
     #use data here to auth the user
-
-    password_from_user_form = request.form['password']
-    user = {
-            "sub" : request.form['firstname'] #sub is used by pyJwt as the owner of the token
+    pw = request.form['password']
+    line = 35
+    usr = 0
+    cur = global_db_con.cursor()
+    cur.execute("select * from employees WHERE name = '" + request.form['user']  + "';")
+    global_db_con.commit()
+    queryRSP = cur.fetchall()
+    if(len(queryRSP) >  0):
+        print("The qp", queryRSP[0][2])
+        if(bcrypt.checkpw(bytes(pw, "utf-8"), bytes(queryRSP[0][3], "utf-8"))):
+            UID = {
+               "sub" : queryRSP[0][2] #sub is used by pyJwt as the owner of the token
             }
-    if not user:
-        return json_response(status_=401, message = 'Invalid credentials', authenticated =  False )
-
-    return json_response( token = create_token(user) , authenticated = True)
-
+        else: 
+            goto(line)
+    else:
+        return json_response(status_=401, message = 'Invalid credentials', authenticated = False )
+    
+    return json_response(status_=200, token = create_token(UID), authenticated = True)

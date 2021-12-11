@@ -4,53 +4,319 @@
 	     <script src="https://code.jquery.com/jquery-3.6.0.js" 
 		     integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
 	     <script src="/static/cis444.js"></script>
+	     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+
+	     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+             <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
     </head>
     <body>
 
 	<script>
+		var resp = null;
 		function send_form(){
-			$.post("/open_api/login", { "firstname":$('#fname').val(), "password":$('#password').val()},
+			$.post("/open_api/login", { "user":$('#username').val(), "password":$('#password').val()},
                        		function(data, textStatus) {
-					//this gets called when browser receives response from server
-					console.log(data.token);
-					//Set global JWT
 					jwt = data.token;
-					//make secure call with the jwt
-					get_books();
-				}, "json").fail( function(response) {
-					//this gets called if the server throws an error
-					console.log("error");
-					console.log(response);
+					alert(jwt);
+					checkAdmin();
+					$('#login').hide();
+					$('#nav_bar').show();
+					}
+				, "json").fail( function(response) {
+					alert("Invalid credentials");
 				});
 			return false;
 		}
 
-		function get_books(){
-			 //make secure call with the jwt
-			secure_get_with_token("/secure_api/get_books", {} , function(data){
-					console.log("got books"); 
-					console.log(data); 
-					$('#buybook').show();
-					},
-                                                function(err){ console.log(err) });
-		}
-                function buy_book(book_id){
+
+		function checkAdmin(){
                          //make secure call with the jwt
-                        secure_get_with_token("/secure_api/get_books", {"book_id" : book_id} , function(data){console.log("got books"); console.log(data)},
-                                                function(err){ console.log(err) });
+                        secure_get_with_token("/secure_api/check_admin", {} , function(data){
+                                resp = data.data[0][0];
+
+                        	if(resp == "t"){
+                                	$('#reg_button').show();
+                                	$('#hours_button').hide();
+                        	}else{
+                                	$('#reg_button').hide();
+                                	$('#hours_button').show();
+                                	fillHours();
+                        	}
+			}, function(err){ 
+                                console.log("Error with admin field");
+                        });
+                }
+                
+		function submitHours(){
+                        secure_get_with_token("/secure_api/submit_hours", {} , function(data){
+                        	alert("Successfully submitted hours");
+				$('#monam').val("");	
+				$('#monpm').val("");
+				$('#tuesam').val("");
+				$('#tuespm').val("");
+				$('#wedam').val("");
+				$('#wedpm').val("");
+				$('#thursam').val("");
+				$('#thurspm').val("");
+				$('#friam').val("");
+				$('#fripm').val("");
+			}, function(err){ 
+                                console.log("Error with admin field");
+                        });
+                }
+		
+		function fillHours(){
+                         //make secure call with the jwt
+                        secure_get_with_token("/secure_api/fill_hours", {} , function(data){
+				for(i = 0; i < data.data.length; i++){
+					if(data.data[i][2] != 0){
+						switch(data.data[i][1]){
+							case "mon_am":
+								$('#monam').val(data.data[i][2]);
+								break;
+							case 'mon_pm':
+								$('#monpm').val(data.data[i][2]);
+								break;
+							case 'tues_am':
+								$('#tuesam').val(data.data[i][2]);
+								break;
+							case 'tues_pm':
+								$('#tuespm').val(data.data[i][2]);
+                                                                break;
+							case 'wed_am':
+								$('#wedam').val(data.data[i][2]);
+								break;
+							case 'wed_pm':
+                                                                $('#wedpm').val(data.data[i][2]);
+                                                                break;
+							case 'thurs_am':
+								$('#thursam').val(data.data[i][2]);
+								break;
+							case 'thurs_pm':
+                                                                $('#thurspm').val(data.data[i][2]);
+                                                                break;
+							case 'fri_am':
+                                                                $('#friam').val(data.data[i][2]);
+                                                                break;
+							case 'fri_pm':
+                                                                $('#fripm').val(data.data[i][2]);
+                                                                break;
+						}
+					}
+				}
+			}, function(err){ 
+                                alert("Error username taken");
+                        });
                 }
 
+
+                function registerUser(){
+                         //make secure call with the jwt
+			secure_get_with_token("/secure_api/register_user", { "username2":$('#username2').val(), "password2":$('#password2').val() } , function(data){
+				var str = "Succesfully registered new user" + $('#username2').val();
+				alert(str);
+			}, function(err){ 
+				console.log(err)
+				alert("Error username taken");
+			});
+                }
+
+
+                function save_hours(){
+			var mon_am = 0;
+			var mon_pm = 0;
+			var tues_am = 0;
+			var wed_am = 0;
+			var wed_pm = 0;
+			var tues_pm = 0;
+			var thurs_am = 0;
+			var thurs_pm = 0;
+			var fri_am = 0;
+			var fri_pm= 0;
+
+			if($('#monam').val()){
+				mon_am = $('#monam').val();
+			}
+                        if($('#monpm').val()){
+                                mon_pm = $('#monpm').val();
+                        }
+			if($('#tuesam').val()){
+				tues_am = $('#tuesam').val();
+                        }
+			if($('#tuespm').val()){
+                                tues_pm = $('#tuespm').val();
+                        }
+			if($('#wedam').val()){
+                                wed_am = $('#wedam').val();
+                        }
+			if($('#wedpm').val()){
+                                wed_pm = $('#wedpm').val();
+                        }
+			if($('#thursam').val()){
+                                thurs_am = $('#thursam').val();
+                        }
+			if($('#thurspm').val()){
+                                thurs_pm = $('#thurspm').val();
+                        }
+			if($('#friam').val()){
+                                fri_am = $('#friam').val();
+                        }
+			if($('#fripm').val()){
+                                fri_pm = $('#fripm').val();
+                        }
+			//make secure call with the jwt
+			secure_get_with_token("/secure_api/save_hours", 
+				{
+					"user" : jwt,
+					"mon_am" : mon_am,
+					"mon_pm" : mon_pm,
+					"tues_am" : tues_am,
+					"tues_pm" : tues_pm,
+					"wed_am" : wed_am,
+					"wed_pm" : wed_pm,
+					"thurs_am" : thurs_am,
+					"thurs_pm" : thurs_pm,
+					"fri_am" : fri_am,
+					"fri_pm" : fri_pm
+
+				}, function(data){
+					alert("Successfully saved hours"); 		
+			}, function(err){ 
+				alert("Error saving hours"); 
+			});
+		}
 	</script>
             <div id="login">
 	    	<form >
-  			<label for="fname">First name:</label><br>
-  				<input type="text" id="fname" name="fname" value="John"><br>
+  			<label for="username">Username:</label><br>
+  				<input type="text" id="username" name="username" value=""><br>
   			<label for="password">Password:</label><br>
-  				<input type="password" id="password" name="password" value="12212"><br><br>
-  			<input type="submit" value="Signup" onclick="return send_form();">
+  				<input type="password" id="password" name="password" value=""><br><br>
+  			<input type="submit" value="Login" onclick="return send_form();">
 		</form>
 	    </div>
-	    <button id="buybook" onclick="buy_book(1234)" style="display:none" >Buy Book</button>
+	   
+
+   <div id = "nav_bar" style="display:none">
+	<nav class="navbar navbar-expand-lg navbar navbar-dark bg-primary">
+  		<div class="container-fluid">
+    			<a class="navbar-brand" href="#">Employee portal</a>
+    			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      				<span class="navbar-toggler-icon"></span>
+    			</button>
+    			<div class="collapse navbar-collapse" id="navbarNav">
+      				<ul class="navbar-nav">
+        			<li class="nav-item" id="hours_button" style="display:none">
+        				<button type="button" class="btn btn-primary" onclick="$('#hours').show();">Log hours</button>
+				</li>
+      				<li class="nav-item" id="reg_button" style="display:none">
+                                        <button type="button" class="btn btn-primary" onclick="$('#register').show();">Register user</button>
+                                </li>
+				</ul>
+    			</div>
+  		</div>
+	</nav>
+    </div>
+    <div id="register" style="display:none">
+                <form >
+                        <label for="username2">Username:</label><br>
+                                <input type="text" id="username2" name="username2"><br>
+                        <label for="password2">Password:</label><br>
+                                <input type="password" id="password2" name="password2" value=""><br><br>
+                        <input type="submit" value = "Register" onclick="return registerUser();">
+                </form>
+            </div>    
+
+
+    <div id = "hours" style="display:none"> 
+	    <div class="accordion accordion-flush" id="accordionFlushExample">
+  		<div class="accordion-item">
+    			<h2 class="accordion-header" id="flush-headingOne">
+      				<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">Monday</button>
+    			</h2>
+    			<div id="flush-collapseOne" class="accordion-collapse collapse" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
+      				<div class="accordion-body">
+					<div class="input-group">
+  						<input type="text" aria-label="" class="form-control" id = "monam">
+  						<span class="input-group-text">am</span>
+						<input type="text" aria-label="" class="form-control" id = "monpm">
+						<span class="input-group-text">pm</span>
+					</div>
+				</div>
+    			</div>
+  		</div>
+	     
+	    <div class="accordion-item">
+                        <h2 class="accordion-header" id="flush-headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo" aria-expanded="false" aria-controls="flush-collapseTwo">Tuesday</button>
+                        </h2>
+                        <div id="flush-collapseTwo" class="accordion-collapse collapse" aria-labelledby="flush-headingTwo" data-bs-parent="#accordionFlushExample">
+                                <div class="accordion-body">
+                                        <div class="input-group">
+                                                <input type="text" aria-label="" class="form-control" id = "tuesam">
+                                                <span class="input-group-text">am</span>
+                                                <input type="text" aria-label="" class="form-control" id = "tuespm">
+                                                <span class="input-group-text">pm</span>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+
+	    <div class="accordion-item">
+                        <h2 class="accordion-header" id=id="flush-headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">Wednesday</button>
+                        </h2>
+                        <div id="flush-collapseThree" class="accordion-collapse collapse" aria-labelledby="flush-headingThree" data-bs-parent="#accordionFlushExample">
+                                <div class="accordion-body">
+                                        <div class="input-group">
+                                                <input type="text" aria-label="" class="form-control" id = "wedam">
+                                                <span class="input-group-text">am</span>
+                                                <input type="text" aria-label="" class="form-control" id = "wedpm">
+                                                <span class="input-group-text">pm</span>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+           
+	    <div class="accordion-item">
+                        <h2 class="accordion-header" id="flush-headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFour" aria-expanded="false" aria-controls="flush-collapseFour">Thursday</button>
+                        </h2>
+                        <div id="flush-collapseFour" class="accordion-collapse collapse" aria-labelledby="flush-headingFour" data-bs-parent="#accordionFlushExample">
+                                <div class="accordion-body">
+                                        <div class="input-group">
+                                                <input type="text" aria-label="" class="form-control" id = "thursam">
+                                                <span class="input-group-text">am</span>
+                                                <input type="text" aria-label="" class="form-control" id = "thurspm">
+                                                <span class="input-group-text">pm</span>
+                                        </div>
+                                </div>
+                        </div>
+             </div>
+
+
+	     <div class="accordion-item">
+                        <h2 class="accordion-header" id="flush-headingFive">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFive" aria-expanded="false" aria-controls="flush-collapseOne">Friday</button>
+                        </h2>
+                        <div id="flush-collapseFive" class="accordion-collapse collapse" aria-labelledby="flush-headingFive" data-bs-parent="#accordionFlushExample">
+                                <div class="accordion-body">
+                                        <div class="input-group">
+                                                <input type="text" aria-label="" class="form-control" id = "friam">
+                                                <span class="input-group-text">am</span>
+                                                <input type="text" aria-label="" class="form-control" id = "fripm">
+                                                <span class="input-group-text">pm</span>
+                                        </div>
+                                </div>
+                        </div>
+              </div>
+           </div>
+           <div class="d-grid gap-2 col-6 mx-auto">
+  		<button class="btn btn-primary" type="button" onclick="submitHours();">Submit</button>
+  		<button class="btn btn-primary" type="button" onclick="save_hours();">Save</button>
+	   </div>
+    </div>	    
     </body>
 </html>
 
