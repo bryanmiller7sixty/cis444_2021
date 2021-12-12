@@ -70,7 +70,7 @@ def handle_request():
     smtp_server = "smtp.gmail.com"
     sender_email = "mille486@cougars.csusm.edu"  # Enter your address
     receiver_email = "mille486@cougars.csusm.edu"  # Enter receiver address
-    password = "spaceghostbrane6111!"
+    password = "password_here"
     message = strBuilder
 
     context = ssl.create_default_context()
